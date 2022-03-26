@@ -316,7 +316,7 @@ int main()
                 (tcp_header->Flags & 0x01),
                 tcp_header->Window);
             
-            // if (tcp_header->Flags == 0x18) // (PSH, ACK) 3路握手成功后
+            if (tcp_header->Flags == 0x18) printf("success");// (PSH, ACK) 3路握手成功后
             // {
             //     if (dst_port == 80) // HTTP GET请求
             //     {
