@@ -5,14 +5,13 @@
 #include <time.h>
 #include <arpa/inet.h>
 #include <cstring>
- 
+#include <iostream>
+#include <string>
+
 #define BUFSIZE 10240
 #define STRSIZE 1024
-#define FILE_NAME "base.pcap"
- 
-typedef int32_t bpf_int32;
-typedef u_int32_t bpf_u_int32;
-typedef u_int16_t  u_short;
+#define FILE_NAME "git_push.pcap"
+
 typedef u_int32_t u_int32;
 typedef u_int16_t u_int16;
 typedef u_int8_t u_int8;
@@ -37,13 +36,13 @@ LinkType：4B链路类型
 */
 typedef struct pcap_file_header
 {
-    bpf_u_int32 magic;       /* 0xa1b2c3d4 */
-    u_short version_major;   /* magjor Version 2 */
-    u_short version_minor;   /* magjor Version 4 */
-    bpf_int32 thiszone;      /* gmt to local correction */
-    bpf_u_int32 sigfigs;     /* accuracy of timestamps */
-    bpf_u_int32 snaplen;     /* max length saved portion of each pkt */
-    bpf_u_int32 linktype;    /* data link type (LINKTYPE_*) */
+    u_int32 Magic;       /* 0xa1b2c3d4 */
+    u_short VersionMajor;   /* magjor Version 2 */
+    u_short VersionMinor;   /* magjor Version 4 */
+    u_int32 ThisZone;      /* gmt to local correction */
+    u_int32 Sigfigs;     /* accuracy of timestamps */
+    u_int32 SnapLen;     /* max length saved portion of each pkt */
+    u_int32 LinkType;    /* data link type (LINKTYPE_*) */
 }pcap_file_header;
 
 /*
@@ -58,44 +57,43 @@ Packet数据：即 Packet（通常就是链路层的数据帧）具体内容，�
 //时间戳
 typedef struct time_val
 {
-    int tv_sec;         /* seconds 含义同 time_t 对象的值 */
-    int tv_usec;        /* and microseconds */
+    int Tv_sec;         /* seconds 含义同 time_t 对象的值 */
+    int Tv_usec;        /* and microseconds */
 }time_val;
  
 //pcap数据包头结构体
 typedef struct pcap_pkthdr
 {
-    time_val ts;  /* time stamp */
-    bpf_u_int32 caplen; /* length of portion present */
-    bpf_u_int32 len;    /* length this packet (off wire) */
+    time_val Ts;  /* time stamp */
+    u_int32 Caplen; /* length of portion present */
+    u_int32 Len;    /* length this packet (off wire) */
 }pcap_pkthdr;
  
 //Pcap捕获的数据帧头
-typedef struct FramHeader_t
+typedef struct Fram_Header
 {
     u_int8 DstMAC[6]; //目的MAC地址
     u_int8 SrcMAC[6]; //源MAC地址
-    // u_short FrameType;    //帧类型
     u_int8 FrameType[2];    //帧类型
-}__attribute__((packed)) FramHeader_t;
+}__attribute__((packed)) Fram_Header;
  
 //IP数据报头
-typedef struct IPHeader_t
+typedef struct IP_Header
 {
     u_int8 Ver_HLen;       //版本+报头长度
     u_int8 TOS;            //服务类型
     u_int16 TotalLen;       //总长度
     u_int16 ID; //标识
-    u_int16 Flag_Segment;   //标志+片偏移
+    u_int16 FlagSegment;   //标志+片偏移
     u_int8 TTL;            //生存周期
     u_int8 Protocol;       //协议类型
     u_int16 Checksum;       //头部校验和
     u_int32 SrcIP; //源IP地址
     u_int32 DstIP; //目的IP地址
-} IPHeader_t;
+} IP_Header;
  
 //TCP数据报头
-typedef struct TCPHeader_t
+typedef struct TCP_Header
 {
     u_int16 SrcPort; //源端口
     u_int16 DstPort; //目的端口
@@ -106,84 +104,127 @@ typedef struct TCPHeader_t
     u_int16 Window; //窗口大小
     u_int16 Checksum; //校验和
     u_int16 UrgentPointer;  //紧急指针
-}TCPHeader_t;
+}TCP_Header;
 
 // UDP数据报头
-typedef struct udp_hdr
+typedef struct UDP_Header
 {
-    u_int16 Srcport;
-    u_int16 Dstport;
-    u_int16 tot_len;
-    u_int16 check_sum;
-}udp_hdr;
+    u_int16 SrcPort;
+    u_int16 DstPort;
+    u_int16 TotalLen;
+    u_int16 Checksum;
+}UDP_Header;
 
-template <class T> T reverse_by_bit(T & a);
-void match_http(FILE *fp, char *head_str, char *tail_str, char *buf, int total_len); //查找 http 信息函数
+// DNS协议头
+typedef struct DNS_Header 
+{
+	u_int16 ID;			//会话标识
+	u_int16 Flags;		//标志
+	u_int16 Questions;	//问题数
+	u_int16 Answer;		//回答 资源记录数
+	u_int16 Authority;	//授权 资源记录数
+	u_int16 Additional;	//附加 资源记录数
+}DNS_Header;
+
+// struct DNA_Queries 
+// {
+// 	u_int32 length;
+// 	u_int16 qtype;
+// 	u_int16 qclass;
+// 	unsigned char* name;
+// }DNA_Queries;
+
+// struct DNS_Item 
+// {
+// 	char* domain;
+// 	char* ip;
+// }DNS_Item;
+
+// TLS头部
+typedef struct TLS_Header 
+{
+	u_int8 Type;
+	u_int16 Version;
+	u_int16 Length;
+}__attribute__((packed)) TLS_Header;
+
+typedef struct TLS_1 
+{
+	u_int8 HandShakeTYpe;
+	u_int8 Length1;
+	u_int16 Length2;
+    u_int16 Version;
+    u_int32 Random[8];
+    u_int16 SessionIDLength;
+}__attribute__((packed)) TLS_1;
+
+template <class T> T reverse_by_bit(T & a); // 按位反转数据(处理大端存储问题)
  
 int main()
 {
     pcap_file_header *file_header;
     pcap_pkthdr *ptk_header;
-    FramHeader_t *mac_header;
-    IPHeader_t *ip_header;
-    TCPHeader_t *tcp_header;
+    Fram_Header *mac_header;
+    IP_Header *ip_header;
+    TCP_Header *tcp_header;
+    UDP_Header *udp_header;
+    DNS_Header *dns_header;
+    TLS_Header *tls_header;
+    TLS_1 *tls_1;
  
     FILE *fp, *output;
     int pkt_offset, i = 0;
-    int ip_len, http_len, ip_proto;
- 
-    int src_port, dst_port, tcp_flags;
- 
-    char buf[BUFSIZE], my_time[STRSIZE];
-    char src_ip[STRSIZE], dst_ip[STRSIZE];
-    char host[STRSIZE], uri[BUFSIZE];
+    int src_port, dst_port;
+    char my_time[STRSIZE], src_ip[STRSIZE], dst_ip[STRSIZE];
  
     //初始化
     file_header = (pcap_file_header *)malloc(sizeof(pcap_file_header));
     ptk_header = (pcap_pkthdr *)malloc(sizeof(pcap_pkthdr));
-    mac_header = (FramHeader_t *)malloc(sizeof(FramHeader_t));
-    ip_header = (IPHeader_t *)malloc(sizeof(IPHeader_t));
-    tcp_header = (TCPHeader_t *)malloc(sizeof(TCPHeader_t));
+    mac_header = (Fram_Header *)malloc(sizeof(Fram_Header));
+    ip_header = (IP_Header *)malloc(sizeof(IP_Header));
+    tcp_header = (TCP_Header *)malloc(sizeof(TCP_Header));
+    udp_header = (UDP_Header *)malloc(sizeof(UDP_Header));
+    dns_header = (DNS_Header *)malloc(sizeof(DNS_Header));
+    tls_header = (TLS_Header *)malloc(sizeof(TLS_Header));
+    tls_1 = (TLS_1 *)malloc(sizeof(TLS_1));
  
-    /*memset(buf, 0, sizeof(buf));*/
- 
-    //
+    // 打开文件
     if ((fp = fopen(FILE_NAME, "r")) == NULL)
     {
         printf("Error: can not open pcap file\n");
         exit(0);
     }
- 
     if ((output = fopen("output.txt", "w+")) == NULL)
     {
         printf("Error: can not open output file\n");
         exit(0);
     }
  
-    //开始读数据包
+    // 开始读数据包
     pkt_offset = 24; //pcap文件头结构 24个字节
 
     // 打印pcap文件头信息
     fread(file_header, sizeof(pcap_file_header), 1, fp);
     if (file_header!=NULL) {
-        printf("1. Pcap file header info\n=====================\n"
+        fprintf(output, "==============Now parsing pcap file=============\n\n"
+            "1. Pcap file header info\n-----------------------------------\n"
             "Magic:0x%0x\n"
-            "Version_major:%u\n"
-            "Version_minor:%u\n"
-            "Thiszone:%d\n"
+            "Version_Major:%u\n"
+            "Version_Minor:%u\n"
+            "Thiszone:%u\n"
             "Sigfigs:%u\n"
             "Snaplen:%u\n"
             "Linktype:%u\n"
-            "=====================\n",
-            file_header->magic,
-            file_header->version_major,
-            file_header->version_minor,
-            file_header->thiszone,
-            file_header->sigfigs,
-            file_header->snaplen,
-            file_header->linktype);
+            "-----------------------------------\n",
+            file_header->Magic,
+            file_header->VersionMajor,
+            file_header->VersionMinor,
+            file_header->ThisZone,
+            file_header->Sigfigs,
+            file_header->SnapLen,
+            file_header->LinkType);
     }
- 
+
     while (fseek(fp, pkt_offset, SEEK_SET) == 0) //遍历数据包
     {
         i++;
@@ -191,120 +232,120 @@ int main()
         memset(ptk_header, 0, sizeof(struct pcap_pkthdr));
         if (fread(ptk_header, 16, 1, fp) != 1) //读pcap数据包头结构
         {
-            printf("\nRead end of pcap file\n");
+            fprintf(output, "\nRead end of pcap file\n");
             break;
         }
  
-        pkt_offset += 16 + ptk_header->caplen;   //下一个数据包的偏移值
+        pkt_offset += 16 + ptk_header->Caplen;   //下一个数据包的偏移值
 
         //读取pcap包时间戳，转换成标准格式时间
         struct tm *timeinfo;
-        time_t t = (time_t)(ptk_header->ts.tv_sec);
+        time_t t = (time_t)(ptk_header->Ts.Tv_sec);
         timeinfo = localtime(&t);
-        strftime(my_time, sizeof(my_time), "%Y-%m-%d %H:%M:%S", timeinfo); //获取时间
+        strftime(my_time, sizeof(my_time), "%Y-%m-%u %H:%M:%S", timeinfo); //获取时间
 
         if (ptk_header!=NULL) {
-            printf("\nThe packet sequence in pcap file is %d.\n=====================\n"
-                "2. Packet file header info\n=====================\n"
+            fprintf(output, "\n====================================================================================\n"
+                "The packet sequence in pcap file is %u.\n-----------------------------------\n"
+                "2. Packet file header info\n-----------------------------------\n"
                 "Timestamp_s:%u\n"
                 "Timestamp_ms:%u\n"
                 "Time in real world:%s\n"
                 "Capture_length:%u\n"
-                "Length:%d\n"
-                "=====================\n",
+                "Length:%u\n"
+                "-----------------------------------\n",
                 i,
-                ptk_header->ts.tv_sec,
-                ptk_header->ts.tv_usec,
+                ptk_header->Ts.Tv_sec,
+                ptk_header->Ts.Tv_usec,
                 my_time,
-                ptk_header->caplen,
-                ptk_header->len);
+                ptk_header->Caplen,
+                ptk_header->Len);
         }
  
         //数据帧头 14字节
         fread(mac_header, 14, 1, fp);
         if (mac_header!=NULL) {
-            printf("3. MAC header info\n=====================\nMAC destination address:");
+            fprintf(output, "3. MAC header info\n-----------------------------------\nMAC destination address:");
             for (auto iter_MAC : mac_header->DstMAC){
                 if (iter_MAC == mac_header->DstMAC[0]){
-                    printf("%02x", iter_MAC);
+                    fprintf(output, "%02x", iter_MAC);
                     continue;
                 }
-                printf(":%02x", iter_MAC);
+                fprintf(output, ":%02x", iter_MAC);
             }
-            printf("\nMAC source address:");
+            fprintf(output, "\nMAC source address:");
             for (auto iter_MAC : mac_header->SrcMAC){
                 if (iter_MAC == mac_header->SrcMAC[0]){
-                    printf("%02x", iter_MAC);
+                    fprintf(output, "%02x", iter_MAC);
                     continue;
                 }
-                printf(":%02x", iter_MAC);
+                fprintf(output, ":%02x", iter_MAC);
             }
-            printf("\nFrame type:0x%02x%02x\n"
-                "=====================\n",
+            fprintf(output, "\nFrame type:0x%02x%02x\n"
+                "-----------------------------------\n",
                 mac_header->FrameType[0],
                 mac_header->FrameType[1]);
         }
-        // fseek(fp, 14, SEEK_CUR); //跳过MAC数据帧头
- 
+
         //IP数据报头 20字节
-        memset(ip_header, 0, sizeof(IPHeader_t));
-        if (fread(ip_header, sizeof(IPHeader_t), 1, fp) != 1)
+        memset(ip_header, 0, sizeof(IP_Header));
+        if (fread(ip_header, sizeof(IP_Header), 1, fp) != 1)
         {
-            printf("%d: Can not read ip_header\n", i);
+            fprintf(output, "%u: Can not read ip_header\n", i);
             break;
         }
  
         inet_ntop(AF_INET, (void *)&(ip_header->SrcIP), src_ip, 16);
         inet_ntop(AF_INET, (void *)&(ip_header->DstIP), dst_ip, 16);
 
-        printf("4. IP protocol header info\n=====================\n"
+        fprintf(output, "4. IP protocol header info\n-----------------------------------\n"
                 "Version:%u\n"
                 "IP header length:%u bytes\n"
-                "Total length:%d bytes\n"
-                "Flag segment:%d\n"
-                "TTL:%d\n"
-                "Protocol:%d\n"
+                "Total length:%u bytes\n"
+                "Flag segment:%u\n"
+                "TTL:%u\n"
+                "Protocol:%u\n"
                 "IP source address:%s\n"
                 "IP destination address:%s\n"
                 "Flags meanings:",
                 (ip_header->Ver_HLen & 0xf0) / 16,
                 (ip_header->Ver_HLen & 0x0f) * 4,
                 ip_header->TotalLen / 256,
-                ip_header->Flag_Segment,
+                ip_header->FlagSegment,
                 ip_header->TTL,
                 ip_header->Protocol,
                 src_ip,
                 dst_ip);
         
-        if ((ip_header->Flag_Segment & 0x80) == 128){
-            printf("reserved bit,");
+        if ((ip_header->FlagSegment & 0x80) == 128){
+            fprintf(output, "reserved bit,");
         }
-        if ((ip_header->Flag_Segment & 0x40) == 64){
-            printf("don't fragment");
+        if ((ip_header->FlagSegment & 0x40) == 64){
+            fprintf(output, "don't fragment");
         }
-        if ((ip_header->Flag_Segment & 0x20) == 32){
-            printf("more fragments");
+        if ((ip_header->FlagSegment & 0x20) == 32){
+            fprintf(output, "more fragments");
         }
-        printf("\n=====================\n");
+        fprintf(output, "\n-----------------------------------\n");
 
         //TCP头 20字节
         if (ip_header->Protocol == 6){
-            fread(tcp_header, sizeof(TCPHeader_t), 1, fp);
+            fread(tcp_header, sizeof(TCP_Header), 1, fp);
             src_port = ntohs(tcp_header->SrcPort);
             dst_port = ntohs(tcp_header->DstPort);
             
-            printf("5. TCP protocol header info\n=====================\n"
+            fprintf(output, "5. TCP protocol header info\n-----------------------------------\n"
                 "TCP source port:%u\n"
                 "TCP destination port:%u\n"
-                "Sequence number:%d\n"
-                "Acknowledge number:%d\n"
-                "TCP header length:%d bytes\n"
-                "Flags:%d\n"
-                "Ack:%d\n"
-                "Syn:%d\n"
-                "Fin:%d\n"
-                "Window size:%d\n"
-                "=====================\n",
+                "Sequence number:%u\n"
+                "Acknowledge number:%u\n"
+                "TCP header length:%u bytes\n"
+                "Flags:%u\n"
+                "Ack:%u\n"
+                "Syn:%u\n"
+                "Fin:%u\n"
+                "Window size:%u\n"
+                "-----------------------------------\n",
                 src_port,
                 dst_port,
                 tcp_header->SeqNO,
@@ -316,39 +357,83 @@ int main()
                 (tcp_header->Flags & 0x01),
                 tcp_header->Window);
             
-            if (tcp_header->Flags == 0x18) printf("succ11ess");// (PSH, ACK) 3路握手成功后
-            // {
-            //     if (dst_port == 80) // HTTP GET请求
-            //     {
-            //         http_len = ip_len - 40; //http 报文长度
-            //         match_http(fp, "Host: ", "\r\n", host, http_len); //查找 host 值
-            //         match_http(fp, "GET ", "HTTP", uri, http_len); //查找 uri 值
-            //         sprintf(buf, "%d:  %s  src = %s : %d  dst = %s : %d  %s%s\r\n", i, my_time, src_ip, src_port, dst_ip, dst_port, host, uri);
-            //         //printf("%s", buf);
-            //         if (fwrite(buf, strlen(buf), 1, output) != 1)
-            //         {
-            //             printf("output file can not write");
-            //             break;
-            //         }
-            //     }
-            // }
+            // TLS协议
+            if (ptk_header->Caplen > 60){
+                fprintf(output, "6. TLS protocol\n-----------------------------------\n");
+                fread(tls_header, sizeof(TLS_Header), 1, fp);
+                if (tls_header->Type == 22){
+                    fread(tls_1, sizeof(TLS_1), 1, fp);
+                    char *CipherSuitesLength=(char *)malloc(2);
+                    u_int16 *CipherSuites=(u_int16 *)malloc(2);
+                    if (tls_1->HandShakeTYpe == 1){
+                        fprintf(output, "Client Hello\nCipherSuites:\n");
+                        int count=0;
+                        fread(CipherSuitesLength, 2, 1, fp);
+                        while(count < *CipherSuitesLength / 2){
+                            count++;
+                            fread(CipherSuites, 2, 1, fp);
+                            fprintf(output, "\t%u:0x%04x\n", count, *CipherSuites);
+                        }
+                    }
+                    if (tls_1->HandShakeTYpe == 2){
+                        fprintf(output, "Server Hello\nCipherSuite:\n");
+                        fread(CipherSuites, 2, 1, fp);
+                        fprintf(output, "\t0x%04x\n", *CipherSuites);
+                    }
+                }
+                else if (tls_header->Type == 20){
+                    fprintf(output, "Change Cipher Spec\n-----------------------------------\n");
+                }
+                else fprintf(output, "Application Data\n-----------------------------------\n");
+            }
+
         }
+        
+        // UDP头 8字节
+        if (ip_header->Protocol == 17){
+            fread(udp_header, sizeof(UDP_Header), 1, fp);
+            src_port = ntohs(udp_header->SrcPort);
+            dst_port = ntohs(udp_header->DstPort);
+            fprintf(output, "5. UDP protocol header info\n-----------------------------------\n"
+                "UDP source port:%u\n"
+                "UDP destination port:%u\n"
+                "Total length:%u\n"
+                "-----------------------------------\n",
+                src_port,
+                dst_port,
+                udp_header->TotalLen);
             
+            // DNS协议
+            if ((src_port == 53) || (dst_port == 53)){
+                fprintf(output, "6. DNS protocol\n-----------------------------------\n");
+                fread(dns_header, sizeof(DNS_Header), 1, fp);
+                char *netname = (char *)malloc(11);
+                fseek(fp, 1, SEEK_CUR);
+                fread(netname, 11, 1, fp);
+                std::string netname1 = netname;
+                netname1.replace(6,1,".");
+                fprintf(output, "Query name:%s\n", netname1.c_str());
+                if (dns_header->Answer){
+                    fseek(fp, 16, SEEK_CUR);
+                    fread(dst_ip, 4, 1, fp);
+                    inet_ntop(AF_INET, (void *)&dst_ip, dst_ip, 16);
+                    fprintf(output, "Answered IP address:%s\n", dst_ip);
+                }
+                fprintf(output, "-----------------------------------\n");
+            }
+        }
     } // end while
- 
+    printf("Finish");
     fclose(fp);
- 
-    //fclose(output);
- 
-    //free(file_header);
+    fclose(output);
+    free(file_header);
     free(ptk_header);
     free(ip_header);
     free(tcp_header);
     return 0;
 }
 
-
-// 按位反转数据
+// 按位反转数据(处理大端存储问题)
 template <class T> T reverse_by_bit(T &a){
     if (sizeof(a) == 1){
         a = (((a & 0xaa) >> 1) | ((a & 0x55) << 1));
@@ -369,73 +454,4 @@ template <class T> T reverse_by_bit(T &a){
         return ((a >> 16) | (a << 16));
     }
     return a;
-}
-
-
-//查找 HTTP 信息
-void match_http(FILE *fp, char *head_str, char *tail_str, char *buf, int total_len)
-{
-    int i;
-    int http_offset;
-    int head_len, tail_len, val_len;
-    char head_tmp[STRSIZE], tail_tmp[STRSIZE];
-    //初始化
-    memset(head_tmp, 0, sizeof(head_tmp));
-    memset(tail_tmp, 0, sizeof(tail_tmp));
-    head_len = strlen(head_str);
-    tail_len = strlen(tail_str);
-    //查找 head_str
- 
-    http_offset = ftell(fp); //记录下HTTP报文初始文件偏移
-    while ((head_tmp[0] = fgetc(fp)) != EOF) //逐个字节遍历
-    {
-        if ((ftell(fp) - http_offset) > total_len)//遍历完成
-        {
-            sprintf(buf, "can not find %s \r\n", head_str);
-            exit(0);
-        }
-        if (head_tmp[0] == *head_str) //匹配到第一个字符
-        {
-            for (i = 1; i<head_len; i++) //匹配 head_str 的其他字符
-            {
-                head_tmp[i] = fgetc(fp);
-                if (head_tmp[i] != *(head_str + i))
-                    break;
-            }
-            if (i == head_len) //匹配 head_str 成功，停止遍历
-                break;
-        }
-    }
-    // printf("head_tmp=%s \n", head_tmp);
- 
-    //查找 tail_str
-    val_len = 0;
-    while ((tail_tmp[0] = fgetc(fp)) != EOF) //遍历
-    {
-        if ((ftell(fp) - http_offset) > total_len) //遍历完成
-        {
-            sprintf(buf, "can not find %s \r\n", tail_str);
-            exit(0);
-        }
-        buf[val_len++] = tail_tmp[0]; //用buf 存储 value 直到查找到 tail_str
-        if (tail_tmp[0] == *tail_str) //匹配到第一个字符
-        {
-            for (i = 1; i<tail_len; i++) //匹配 head_str 的其他字符
-            {
-                tail_tmp[i] = fgetc(fp);
-                if (tail_tmp[i] != *(tail_str + i))
-                    break;
-            }
- 
-            if (i == tail_len) //匹配 head_str 成功，停止遍历
-            {
-                buf[val_len - 1] = 0; //清除多余的一个字符
-                break;
-            }
-        }
-    }
- 
-    // printf("val=%s\n", buf);
- 
-    fseek(fp, http_offset, SEEK_SET); //将文件指针 回到初始偏移
 }
