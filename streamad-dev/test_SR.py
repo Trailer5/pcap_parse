@@ -17,31 +17,31 @@ import matplotlib.pylab as plt
 
 # test_ts needs to import timesynth, to install you can use "pip install timesynth"
 
-# import timesynth as ts
+import timesynth as ts
 
-# def test_ts():
-#     od = SpectralResidual()
-#     n_points = 10000
-#     time_sampler = ts.TimeSampler(stop_time=n_points // 4)
-#     time_samples = time_sampler.sample_regular_time(num_points=n_points)
+def test_ts():
+    od = SpectralResidual()
+    n_points = 10000
+    time_sampler = ts.TimeSampler(stop_time=n_points // 4)
+    time_samples = time_sampler.sample_regular_time(num_points=n_points)
 
-#     # harmonic time series with Gaussian noise
-#     sinusoid = ts.signals.Sinusoidal(frequency=0.25)
-#     white_noise = ts.noise.GaussianNoise(std=0.1)
-#     ts_harm = ts.TimeSeries(signal_generator=sinusoid, noise_generator=white_noise)
-#     samples, signals, errors = ts_harm.sample(time_samples)
-#     X = samples.reshape(-1, 1).astype(np.float32)
+    # harmonic time series with Gaussian noise
+    sinusoid = ts.signals.Sinusoidal(frequency=0.25)
+    white_noise = ts.noise.GaussianNoise(std=0.1)
+    ts_harm = ts.TimeSeries(signal_generator=sinusoid, noise_generator=white_noise)
+    samples, signals, errors = ts_harm.sample(time_samples)
+    X = samples.reshape(-1, 1).astype(np.float32)
 
-#     data = inject_outlier_ts(X, perc_outlier=10, perc_window=10, n_std=2.0, min_std=1.0)
-#     X_outlier, y_outlier, labels = data.data, data.target.astype(int), data.target_names
+    data = inject_outlier_ts(X, perc_outlier=10, perc_window=10, n_std=2.0, min_std=1.0)
+    X_outlier, y_outlier, labels = data.data, data.target.astype(int), data.target_names
 
-#     for X in X_outlier:
-#         od.fit(X)
-#     y_score = od.score(X_outlier, 1)
+    for X in X_outlier:
+        od.fit(X)
+    y_score = od.score(X_outlier, 1)
 
-#     fpr, tpr, threshold = roc_curve(y_outlier[-10000:], y_score)
-#     roc_auc = auc(fpr, tpr)  ###计算auc的值
-#     assert roc_auc > 0.8
+    fpr, tpr, threshold = roc_curve(y_outlier[-10000:], y_score)
+    roc_auc = auc(fpr, tpr)  ###计算auc的值
+    assert roc_auc > 0.8
 
 
 class Bunch(dict):
