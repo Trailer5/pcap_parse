@@ -19,6 +19,7 @@ import matplotlib.pylab as plt
 
 import timesynth as ts
 
+
 def test_ts():
     od = SpectralResidual()
     n_points = 10000
@@ -146,3 +147,6 @@ def test_StreamGenerator():
     fpr, tpr, threshold = roc_curve(label, y_score)
     roc_auc = auc(fpr, tpr)  ###计算auc的值
     assert roc_auc > 0.8
+
+
+test_StreamGenerator()
