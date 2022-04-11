@@ -150,4 +150,3 @@ def test_StreamGenerator():
 
 
 test_StreamGenerator()
-test_ts()
