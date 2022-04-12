@@ -2,9 +2,6 @@ import numpy as np
 from streamad.base import BaseDetector
 from collections import deque
 from collections.abc import Iterable
-import pandas as pd
-import math
-from streamad.util import StreamStatistic
 
 
 # using RedefStructs
