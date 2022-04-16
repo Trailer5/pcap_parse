@@ -10,7 +10,7 @@ from collections.abc import Iterable
 # using OnlineStats
 # import LinearAlgebra: norm
 
-# include("AdaptiveResonanceCompact.jl")
+include("AdaptiveResonanceCompact.jl")
 
 class ClassifyState:
     art = AdaptiveResonance.DVFA()
